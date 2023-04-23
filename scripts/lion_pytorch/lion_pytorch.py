@@ -36,7 +36,7 @@ class Lion(Optimizer):
         use_triton: bool = False
     ):
         assert lr > 0.
-        assert all([0. <= beta <= 1. for beta in betas])
+        assert all(0. <= beta <= 1. for beta in betas)
 
         defaults = dict(
             lr = lr,

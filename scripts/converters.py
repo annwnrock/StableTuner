@@ -73,29 +73,29 @@ class Convert_SD_to_Diffusers():
         if self.version == 'v1':
             is_v1 = True
             is_v2 = False
-        if self.version == 'v2':
+        elif self.version == 'v2':
             is_v1 = False
             is_v2 = True
-        if is_v2 == True and prediction_type == 'vprediction':
-            reference_diffusers_model = 'stabilityai/stable-diffusion-2'
-        if is_v2 == True and prediction_type == 'epsilon':
-            reference_diffusers_model = 'stabilityai/stable-diffusion-2-base'
+        if is_v2 == True:
+            if prediction_type == 'epsilon':
+                reference_diffusers_model = 'stabilityai/stable-diffusion-2-base'
+            elif prediction_type == 'vprediction':
+                reference_diffusers_model = 'stabilityai/stable-diffusion-2'
         if is_v1 == True and prediction_type == 'epsilon':
             reference_diffusers_model = 'runwayml/stable-diffusion-v1-5'
         dtype = 'fp16' if self.half else None
-        v2_model = True if is_v2 else False
+        v2_model = bool(is_v2)
         print(f"loading model from: {self.checkpoint_path}")
         #print(v2_model)
         text_encoder, vae, unet = model_util.load_models_from_stable_diffusion_checkpoint(v2_model, self.checkpoint_path)
         print(f"copy scheduler/tokenizer config from: {reference_diffusers_model}")
         model_util.save_diffusers_checkpoint(v2_model, self.output_path, text_encoder, unet, reference_diffusers_model, vae)
-        print(f"Diffusers model saved.")
+        print("Diffusers model saved.")
         
         
 
 class Convert_Diffusers_to_SD():
     def __init__(self,model_path=None, output_path=None):
-        pass
         def main(model_path:str, output_path:str):
             #print(model_path)
             #print(output_path)
@@ -110,5 +110,6 @@ class Convert_Diffusers_to_SD():
             original_model = None
             key_count = model_util.save_stable_diffusion_checkpoint(v2_model, output_path, text_encoder, unet,
                                                               original_model, epoch, global_step, dtype, vae)
-            print(f"Saved model")
+            print("Saved model")
+
         return main(model_path, output_path)

@@ -57,8 +57,13 @@ class LoRAModule(torch.nn.Module):
 def create_network(multiplier, network_dim, network_alpha, vae, text_encoder, unet, **kwargs):
   if network_dim is None:
     network_dim = 4                     # default
-  network = LoRANetwork(text_encoder, unet, multiplier=multiplier, lora_dim=network_dim, alpha=network_alpha)
-  return network
+  return LoRANetwork(
+      text_encoder,
+      unet,
+      multiplier=multiplier,
+      lora_dim=network_dim,
+      alpha=network_alpha,
+  )
 
 
 def create_network_from_weights(multiplier, file, vae, text_encoder, unet, **kwargs):
@@ -104,7 +109,7 @@ class LoRANetwork(torch.nn.Module):
         if module.__class__.__name__ in target_replace_modules:
           for child_name, child_module in module.named_modules():
             if child_module.__class__.__name__ == "Linear" or (child_module.__class__.__name__ == "Conv2d" and child_module.kernel_size == (1, 1)):
-              lora_name = prefix + '.' + name + '.' + child_name
+              lora_name = f'{prefix}.{name}.{child_name}'
               lora_name = lora_name.replace('.', '_')
               lora = LoRAModule(lora_name, child_module, self.multiplier, self.lora_dim, self.alpha)
               loras.append(lora)
@@ -151,7 +156,8 @@ class LoRANetwork(torch.nn.Module):
       else:
         assert apply_unet == weights_has_unet, f"u-net weights: {weights_has_unet} but u-net flag: {apply_unet} / 重みとU-Netのフラグが矛盾しています"
     else:
-      assert apply_text_encoder is not None and apply_unet is not None, f"internal error: flag not set"
+      assert (apply_text_encoder is not None
+              and apply_unet is not None), "internal error: flag not set"
 
     if apply_text_encoder:
       print("enable LoRA for text encoder")

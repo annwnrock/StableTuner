@@ -48,11 +48,10 @@ def print_instructions():
 def get_full_repo_name(model_id: str, organization: Optional[str] = None, token: Optional[str] = None):
     if token is None:
         token = HfFolder.get_token()
-    if organization is None:
-        username = whoami(token)["name"]
-        return f"{username}/{model_id}"
-    else:
+    if organization is not None:
         return f"{organization}/{model_id}"
+    username = whoami(token)["name"]
+    return f"{username}/{model_id}"
 
 #function to format a dictionary into a telegram message
 def format_dict(d):
@@ -378,13 +377,10 @@ class Depth2Img:
             self.vae_scale_factor = 2 ** (len(self.pipeline.vae.config.block_out_channels) - 1)
         non_depth_image_files = []
         image_paths_by_path = {}
-        
+
         for path in paths:
             #if path is list
-            if isinstance(path, list):
-                img = Path(path[0])
-            else:
-                img = Path(path)
+            img = Path(path[0]) if isinstance(path, list) else Path(path)
             if self.get_depth_image_path(img).exists():
                 continue
             else:
@@ -392,15 +388,15 @@ class Depth2Img:
         image_objects = []
         for image_path in non_depth_image_files:
             image_instance = Image.open(image_path)
-            if not image_instance.mode == "RGB":
+            if image_instance.mode != "RGB":
                 image_instance = image_instance.convert("RGB")
             image_instance = self.pipeline.feature_extractor(
                 image_instance, return_tensors="pt"
             ).pixel_values
-            
+
             image_instance = image_instance.to(self.accelerator.device)
             image_objects.append((image_path, image_instance))
-        
+
         for image_path, image_instance in image_objects:
             path = image_path.parent
             ogImg = Image.open(image_path)
