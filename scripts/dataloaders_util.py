@@ -293,15 +293,18 @@ def get_aspect_buckets(resolution,mode=''):
         raise ValueError("Resolution must be at least 512")
     try: 
         rounded_resolution = int(resolution / 64) * 64
-        print(f" {bcolors.WARNING} Rounded resolution to: {rounded_resolution}{bcolors.ENDC}")   
+        print(f" {bcolors.WARNING} Rounded resolution to: {rounded_resolution}{bcolors.ENDC}")
         all_image_sizes = __get_all_aspects()
         if mode == 'MJ':
             #truncate to the first 3 resolutions
-            all_image_sizes = [x[0:3] for x in all_image_sizes]
-        aspects = next(filter(lambda sizes: sizes[0][0]==rounded_resolution, all_image_sizes), None)
-        ASPECTS = aspects
-        #print(aspects)
-        return aspects
+            all_image_sizes = [x[:3] for x in all_image_sizes]
+        return next(
+            filter(
+                lambda sizes: sizes[0][0] == rounded_resolution,
+                all_image_sizes,
+            ),
+            None,
+        )
     except Exception as e:
         print(f" {bcolors.FAIL} *** Could not find selected resolution: {rounded_resolution}{bcolors.ENDC}")   
 
@@ -397,14 +400,14 @@ class AutoBucketing(Dataset):
         #print(self.image_train_items)
         if self.with_prior_loss and self.add_class_images_to_dataset == False:
             self.image_train_items, self.class_train_items = shared_dataloader.get_all_images()
-            self.num_train_images = self.num_train_images + len(self.image_train_items)
-            self.num_reg_images = self.num_reg_images + len(self.class_train_items)
+            self.num_train_images += len(self.image_train_items)
+            self.num_reg_images += len(self.class_train_items)
             self._length = max(max(math.trunc(self.num_train_images * repeats), batch_size),math.trunc(self.num_reg_images * repeats), batch_size) - self.num_train_images % self.batch_size
-            self.num_train_images = self.num_train_images + self.num_reg_images
-            
+            self.num_train_images += self.num_reg_images
+
         else:
             self.image_train_items = shared_dataloader.get_all_images()
-            self.num_train_images = self.num_train_images + len(self.image_train_items)
+            self.num_train_images += len(self.image_train_items)
             self._length = max(math.trunc(self.num_train_images * repeats), batch_size) - self.num_train_images % self.batch_size
 
         print()
@@ -495,8 +498,8 @@ class ImageTrainItem():
         self.caption = caption
         self.target_wh = target_wh
         self.pathname = pathname
-        self.mask_pathname = os.path.splitext(pathname)[0] + "-masklabel.png"
-        self.depth_pathname = os.path.splitext(pathname)[0] + "-depth.png"
+        self.mask_pathname = f"{os.path.splitext(pathname)[0]}-masklabel.png"
+        self.depth_pathname = f"{os.path.splitext(pathname)[0]}-depth.png"
         self.flip_p = flip_p
         self.flip = transforms.RandomHorizontalFlip(p=flip_p)
         self.cropped_img = None
@@ -639,7 +642,15 @@ class CachedLatentsDataset(Dataset):
         self.text_encoder = text_encoder
         #get text encoder device
         text_encoder_device = next(self.text_encoder.parameters()).device
-        self.empty_batch = [self.tokenizer('',padding="do_not_pad",truncation=True,max_length=self.tokenizer.model_max_length,).input_ids for i in range(batch_size)]
+        self.empty_batch = [
+            self.tokenizer(
+                '',
+                padding="do_not_pad",
+                truncation=True,
+                max_length=self.tokenizer.model_max_length,
+            ).input_ids
+            for _ in range(batch_size)
+        ]
         #handle text encoder for empty tokens
         if self.args.train_text_encoder != True:
             self.empty_tokens = tokenizer.pad({"input_ids": self.empty_batch},padding="max_length",max_length=tokenizer.model_max_length,return_tensors="pt",).to(text_encoder_device).input_ids
@@ -661,8 +672,7 @@ class CachedLatentsDataset(Dataset):
                 self.cache_paths = tuple(random.sample(self.cache_paths, len(self.cache_paths)))
             if len(self.cache_paths) > 1:
                 possible_indexes_extension = None
-                possible_indexes = list(range(0,len(self.cache_paths)))
-                #conditional dropout is a percentage of images to drop from the total cache_paths
+                possible_indexes = list(range(len(self.cache_paths)))
                 if self.conditional_dropout != None:
                     if len(self.conditional_indexes) == 0:
                         self.conditional_indexes = random.sample(possible_indexes, k=int(math.ceil(len(possible_indexes)*self.conditional_dropout)))
@@ -670,15 +680,15 @@ class CachedLatentsDataset(Dataset):
                         #pick indexes from the remaining possible indexes
                         possible_indexes_extension = [i for i in possible_indexes if i not in self.conditional_indexes]
                         #duplicate all values in possible_indexes_extension
-                        possible_indexes_extension = possible_indexes_extension + possible_indexes_extension
-                        possible_indexes_extension = possible_indexes_extension + self.conditional_indexes
+                        possible_indexes_extension += possible_indexes_extension
+                        possible_indexes_extension += self.conditional_indexes
                         self.conditional_indexes = random.sample(possible_indexes_extension, k=int(math.ceil(len(possible_indexes)*self.conditional_dropout)))
                         #check for duplicates in conditional_indexes values
                         if len(self.conditional_indexes) != len(set(self.conditional_indexes)):
                             #remove duplicates
                             self.conditional_indexes_non_dupe = list(set(self.conditional_indexes))
                             #add a random value from possible_indexes_extension for each duplicate
-                            for i in range(len(self.conditional_indexes) - len(self.conditional_indexes_non_dupe)):
+                            for _ in range(len(self.conditional_indexes) - len(self.conditional_indexes_non_dupe)):
                                 while True:
                                     random_value = random.choice(possible_indexes_extension)
                                     if random_value not in self.conditional_indexes_non_dupe:

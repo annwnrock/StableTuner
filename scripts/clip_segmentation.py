@@ -57,14 +57,13 @@ def parse_args():
         help="amount of expansion of the generated mask in all directions",
     )
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 class MaskSample:
     def __init__(self, filename: str):
         self.image_filename = filename
-        self.mask_filename = os.path.splitext(filename)[0] + "-masklabel.png"
+        self.mask_filename = f"{os.path.splitext(filename)[0]}-masklabel.png"
 
         self.image = None
         self.mask_tensor = None
@@ -216,7 +215,7 @@ class ClipSeg:
             outputs = self.model(**inputs)
         predicted_mask = self.__process_mask(outputs.logits, mask_sample.height, mask_sample.width, threshold)
 
-        if mode == 'replace' or mode == 'fill':
+        if mode in {'replace', 'fill'}:
             mask_sample.set_mask_tensor(predicted_mask)
         elif mode == 'add':
             mask_sample.add_mask_tensor(predicted_mask)
@@ -317,7 +316,9 @@ def main():
         threshold=args.threshold,
         smooth_pixels=args.smooth_pixels,
         expand_pixels=args.expand_pixels,
-        error_callback=lambda filename: print("Error while processing image " + filename)
+        error_callback=lambda filename: print(
+            f"Error while processing image {filename}"
+        ),
     )
 
 

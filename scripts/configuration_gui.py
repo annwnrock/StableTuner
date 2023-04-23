@@ -64,7 +64,7 @@ class ConceptWidget(ctk.CTkFrame):
         self.parent = parent
         self.concept = concept
         #if concept is none, make a new concept
-        if self.concept == None:
+        if self.concept is None:
             self.default_image_preview = Image.open("resources/stableTuner_logo.png").resize((150, 150), Image.Resampling.LANCZOS)
             #self.default_image_preview = ImageTk.PhotoImage(self.default_image_preview)
             self.concept_name = "New Concept"
@@ -80,7 +80,7 @@ class ConceptWidget(ctk.CTkFrame):
         else:
             self.concept = concept
             self.concept.image_preview = self.make_image_preview()
-        
+
         self.width = width
         self.height = height
         self.configure(fg_color='transparent',border_width=0)
@@ -92,7 +92,7 @@ class ConceptWidget(ctk.CTkFrame):
         #if self.concept.image_preview is type(str):
         #    self.concept.image_preview = Image.open(self.concept.image_preview)
         self.concept_image_label = ctk.CTkLabel(self.concept_frame,text='',width=width,height=height, image=ctk.CTkImage(self.concept.image_preview,size=(100,100)))
-        
+
         self.concept_image_label.grid(row=0, column=0, sticky="nsew")
         #ctk button with name as text and image as preview
         self.concept_button = ctk.CTkLabel(self.concept_frame, text=self.concept.concept_name,bg_color='transparent', compound="top")
@@ -116,66 +116,65 @@ class ConceptWidget(ctk.CTkFrame):
             alpha.paste(circle.crop((rad, rad, rad * 2, rad * 2)), (w - rad, h - rad))
             im.putalpha(alpha)
             return im
+
         path = self.concept.concept_path
         icon = 'resources/stableTuner_icon.png'
         #create a photoimage object of the image in the path
         icon = Image.open(icon)
         #resize the image
         image = icon.resize((150, 150), Image.Resampling.LANCZOS)
-        if path != "" and path != None:
-            if os.path.exists(path):
-                files = []
+        if path not in ["", None] and os.path.exists(path):
+            files = []
                 #if there are sub directories
-                if self.concept.process_sub_dirs:
-                    #get a list of all sub directories
-                    sub_dirs = [f.path for f in os.scandir(path) if f.is_dir()]
+            if self.concept.process_sub_dirs:
+                #get a list of all sub directories
+                sub_dirs = [f.path for f in os.scandir(path) if f.is_dir()]
                     #if there are sub directories
-                    if len(sub_dirs) != 0:
-                        #collect all images in sub directories
-                        for sub_dir in sub_dirs:
-                            #collect the full path of all files in the sub directory to files
-                            files += [os.path.join(sub_dir, f) for f in os.listdir(sub_dir)]
-                #if there are no sub directories
-                else:
-                    files = [os.path.join(path, f) for f in os.listdir(path)]
-                    #omit sub directories
-                    files = [f for f in files if not os.path.isdir(f)]
-                if len(files) != 0:
-                    for i in range(4):
-                        #get an image from the path
-                        import random
-                        
-                        #filter files for images
-                        files = [f for f in files if (f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")) and not f.endswith("-masklabel.png") and not f.endswith("-depth.png")]
-                        if len(files) != 0:
-                            rand = random.choice(files)
-                            image_path = rand
-                            #remove image_path from files
-                            if len(files) > 4:
-                                files.remove(rand)
-                            #files.pop(image_path)
-                            #open the image
-                            #print(image_path)
-                            image_to_add = Image.open(image_path)
-                            #resize the image to 38x38
-                            #resize to 150x150 closest to the original aspect ratio
-                            image_to_add.thumbnail((75, 75), Image.Resampling.LANCZOS)
-                            #decide where to put the image
-                            if i == 0:
-                                #top left
-                                image.paste(image_to_add, (0, 0))
-                            elif i == 1:
-                                #top right
-                                image.paste(image_to_add, (75, 0))
-                            elif i == 2:
-                                #bottom left
-                                image.paste(image_to_add, (0, 75))
-                            elif i == 3:
-                                #bottom right
-                                image.paste(image_to_add, (75, 75))
-                    image = add_corners(image, 30)
-                        #convert the image to a photoimage
-                        #image.show()
+                if sub_dirs:
+                    #collect all images in sub directories
+                    for sub_dir in sub_dirs:
+                        #collect the full path of all files in the sub directory to files
+                        files += [os.path.join(sub_dir, f) for f in os.listdir(sub_dir)]
+            else:
+                files = [os.path.join(path, f) for f in os.listdir(path)]
+                #omit sub directories
+                files = [f for f in files if not os.path.isdir(f)]
+            if len(files) != 0:
+                for i in range(4):
+                    #get an image from the path
+                    import random
+
+                    #filter files for images
+                    files = [f for f in files if (f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")) and not f.endswith("-masklabel.png") and not f.endswith("-depth.png")]
+                    if files:
+                        rand = random.choice(files)
+                        image_path = rand
+                        #remove image_path from files
+                        if len(files) > 4:
+                            files.remove(rand)
+                        #files.pop(image_path)
+                        #open the image
+                        #print(image_path)
+                        image_to_add = Image.open(image_path)
+                        #resize the image to 38x38
+                        #resize to 150x150 closest to the original aspect ratio
+                        image_to_add.thumbnail((75, 75), Image.Resampling.LANCZOS)
+                        #decide where to put the image
+                        if i == 0:
+                            #top left
+                            image.paste(image_to_add, (0, 0))
+                        elif i == 1:
+                            #top right
+                            image.paste(image_to_add, (75, 0))
+                        elif i == 2:
+                            #bottom left
+                            image.paste(image_to_add, (0, 75))
+                        elif i == 3:
+                            #bottom right
+                            image.paste(image_to_add, (75, 75))
+                image = add_corners(image, 30)
+                                #convert the image to a photoimage
+                                #image.show()
         newImage=ctk.CTkImage(image,size=(100,100))
         #print(image)
         self.image_preview = image
@@ -211,7 +210,7 @@ class ConceptWindow(ctk.CTkToplevel):
         self.focus_set()
         self.default_image_preview = Image.open("resources/stableTuner_icon.png").resize((150, 150), Image.Resampling.LANCZOS)
         #self.default_image_preview = ImageTk.PhotoImage(self.default_image_preview)
-        
+
         #make a frame for the concept window
         self.concept_frame = ctk.CTkFrame(self, width=600, height=300)
         self.concept_frame.grid(row=0, column=0, sticky="nsew",padx=10,pady=10)
@@ -240,7 +239,7 @@ class ConceptWindow(ctk.CTkToplevel):
         self.concept_path_entry.grid(row=1, column=1, sticky="e",padx=5,pady=5)
         #on focus out, update the preview image
         self.concept_path_entry.bind("<FocusOut>", lambda event: self.update_preview_image(self.concept_path_entry))
-        
+
         self.concept_path_entry.insert(0, self.concept.concept_path)
         #make a button to browse for concept path
         self.concept_path_button = ctk.CTkButton(self.concept_frame_subframe,width=30, text="...", command=lambda: self.browse_for_path(self.concept_path_entry))
@@ -274,7 +273,7 @@ class ConceptWindow(ctk.CTkToplevel):
         if self.concept.flip_p != '':
             self.flip_probability_entry.insert(0, self.concept.flip_p)
         #self.flip_probability_entry.bind("<button-3>", self.create_right_click_menu)
-        
+
         #make a label for dataset balancingprocess_sub_dirs
         self.balance_dataset_label = ctk.CTkLabel(self.concept_frame_subframe, text="Don't Balance Dataset")
         self.balance_dataset_label.grid(row=5, column=0, sticky="nsew",padx=5,pady=5)
@@ -295,11 +294,8 @@ class ConceptWindow(ctk.CTkToplevel):
         #add image preview 
         self.image_preview_label = ctk.CTkLabel(self.concept_frame_subframe,text='', width=150, height=150,image=ctk.CTkImage(self.default_image_preview,size=(150,150)))
         self.image_preview_label.grid(row=0, column=4,rowspan=5, sticky="nsew",padx=5,pady=5)
-        if self.concept.image_preview != None or self.concept.image_preview != "":
-            #print(self.concept.image_preview)
-            self.update_preview_image(entry=None,path=None,pil_image=self.concept.image_preview)
-        elif self.concept.concept_data_path != "":
-            self.update_preview_image(entry=None,path=self.concept_data_path)
+        #print(self.concept.image_preview)
+        self.update_preview_image(entry=None,path=None,pil_image=self.concept.image_preview)
         #self.image_container = self.image_preview_label.create_image(0, 0, anchor="nw", image=test_image)
 
         #make a save button
@@ -350,11 +346,12 @@ class ConceptWindow(ctk.CTkToplevel):
             alpha.paste(circle.crop((rad, rad, rad * 2, rad * 2)), (w - rad, h - rad))
             im.putalpha(alpha)
             return im
+
         #check if entry has changed
-        if entry != None and path == None :
+        if entry != None and path is None:
             #get the path from the entry
             path = entry.get()
-            
+
         #get the path from the entry
         #path = event.widget.get()
         #canvas = self.canvas
@@ -365,67 +362,65 @@ class ConceptWindow(ctk.CTkToplevel):
         icon = Image.open(icon)
         #resize the image
         image = icon.resize((150, 150), Image.Resampling.LANCZOS)
-        if path != "" and path != None:
-            if os.path.exists(path):
-                files = []
+        if path not in ["", None] and os.path.exists(path):
+            files = []
                 #if there are sub directories in the path
-                if self.concept.process_sub_dirs or self.process_sub_dirs_switch.get() == 1:
-                    #get a list of all sub directories
-                    sub_dirs = [f.path for f in os.scandir(path) if f.is_dir()]
+            if self.concept.process_sub_dirs or self.process_sub_dirs_switch.get() == 1:
+                #get a list of all sub directories
+                sub_dirs = [f.path for f in os.scandir(path) if f.is_dir()]
                     #if there are sub directories
-                    if len(sub_dirs) != 0:
-                        #collect all images in sub directories
-                        for sub_dir in sub_dirs:
-                            #collect the full path of all files in the sub directory to files
-                            files += [os.path.join(sub_dir, f) for f in os.listdir(sub_dir)]
-                #if there are no sub directories
-                else:
-                    files = [os.path.join(path, f) for f in os.listdir(path)]
-                    #omit sub directories
-                    files = [f for f in files if not os.path.isdir(f)]
-                if len(files) != 0:
-                    for i in range(4):
-                        #get an image from the path
-                        import random
-                        
-                        #filter files for images
-                        files = [f for f in files if (f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")) and not f.endswith("-masklabel.png") and not f.endswith("-depth.png")]
-                        if len(files) != 0:
-                            rand = random.choice(files)
-                            image_path = os.path.join(path,rand)
-                            #remove image_path from files
-                            if len(files) > 4:
-                                files.remove(rand)
-                            #files.pop(image_path)
-                            #open the image
-                            #print(image_path)
-                            image_to_add = Image.open(image_path)
-                            #resize the image to 38x38
-                            #resize to 150x150 closest to the original aspect ratio
-                            image_to_add.thumbnail((75, 75), Image.Resampling.LANCZOS)
-                            #decide where to put the image
-                            if i == 0:
-                                #top left
-                                image.paste(image_to_add, (0, 0))
-                            elif i == 1:
-                                #top right
-                                image.paste(image_to_add, (75, 0))
-                            elif i == 2:
-                                #bottom left
-                                image.paste(image_to_add, (0, 75))
-                            elif i == 3:
-                                #bottom right
-                                image.paste(image_to_add, (75, 75))
-                        add_corners(image, 30)
-                        #convert the image to a photoimage
-                        #image.show()
+                if sub_dirs:
+                    #collect all images in sub directories
+                    for sub_dir in sub_dirs:
+                        #collect the full path of all files in the sub directory to files
+                        files += [os.path.join(sub_dir, f) for f in os.listdir(sub_dir)]
+            else:
+                files = [os.path.join(path, f) for f in os.listdir(path)]
+                #omit sub directories
+                files = [f for f in files if not os.path.isdir(f)]
+            if len(files) != 0:
+                for i in range(4):
+                    #get an image from the path
+                    import random
+
+                    #filter files for images
+                    files = [f for f in files if (f.endswith(".jpg") or f.endswith(".png") or f.endswith(".jpeg")) and not f.endswith("-masklabel.png") and not f.endswith("-depth.png")]
+                    if files:
+                        rand = random.choice(files)
+                        image_path = os.path.join(path,rand)
+                        #remove image_path from files
+                        if len(files) > 4:
+                            files.remove(rand)
+                        #files.pop(image_path)
+                        #open the image
+                        #print(image_path)
+                        image_to_add = Image.open(image_path)
+                        #resize the image to 38x38
+                        #resize to 150x150 closest to the original aspect ratio
+                        image_to_add.thumbnail((75, 75), Image.Resampling.LANCZOS)
+                        #decide where to put the image
+                        if i == 0:
+                            #top left
+                            image.paste(image_to_add, (0, 0))
+                        elif i == 1:
+                            #top right
+                            image.paste(image_to_add, (75, 0))
+                        elif i == 2:
+                            #bottom left
+                            image.paste(image_to_add, (0, 75))
+                        elif i == 3:
+                            #bottom right
+                            image.paste(image_to_add, (75, 75))
+                    add_corners(image, 30)
+                                    #convert the image to a photoimage
+                                    #image.show()
         if pil_image != None:
             image = pil_image
         #if image is of type PIL.Image.
-        
+
         newImage=ctk.CTkImage(image,size=(150,150))
         self.image_preview = image
-        
+
         self.image_preview_label.configure(image=newImage)
 
     #function to browse for concept path
@@ -467,25 +462,25 @@ class ConceptWindow(ctk.CTkToplevel):
 #class of the concept
 class Concept:
     def __init__(self, concept_name, concept_path, class_name, class_path,flip_p, balance_dataset=None,process_sub_dirs=None,image_preview=None, image_container=None):
-        if concept_name == None:
+        if concept_name is None:
             concept_name = ""
-        if concept_path == None:
+        if concept_path is None:
             concept_path = ""
-        if class_name == None:
+        if class_name is None:
             class_name = ""
-        if class_path == None:
+        if class_path is None:
             class_path = ""
-        if flip_p == None:
+        if flip_p is None:
             flip_p = ""
-        if balance_dataset == None:
+        if balance_dataset is None:
             balance_dataset = False
-        if process_sub_dirs == None:
+        if process_sub_dirs is None:
             process_sub_dirs = False
-        if image_preview == None:
+        if image_preview is None:
             image_preview = ""
-        if image_container == None:
+        if image_container is None:
             image_container = ""
-        
+
 
         self.concept_name = concept_name
         self.concept_path = concept_path

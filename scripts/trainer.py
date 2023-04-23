@@ -93,7 +93,7 @@ def parse_args():
     parser.add_argument("--conditional_dropout", type=float, default=None,required=False, help="Conditional dropout probability")
     parser.add_argument('--disable_cudnn_benchmark', default=False, action="store_true")
     parser.add_argument('--use_text_files_as_captions', default=False, action="store_true")
-    
+
     parser.add_argument(
             "--sample_from_batch",
             type=int,
@@ -393,7 +393,7 @@ def parse_args():
     parser.add_argument('--add_mask_prompt', type=str, default=None, action="append", dest="mask_prompts", help="Prompt for automatic mask creation")
     args = parser.parse_args()
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
-    if env_local_rank != -1 and env_local_rank != args.local_rank:
+    if env_local_rank not in [-1, args.local_rank]:
         args.local_rank = env_local_rank
 
     return args

@@ -46,7 +46,7 @@ def check_versions():
                 if "diffusers" in key:
                     key = "diffusers"
                 reqs_dict[key] = splits[1].replace("\n", "").strip()
-    
+
     if os.name == "nt":
         reqs_dict["torch"] = "1.12.1+cu116"
         reqs_dict["torchvision"] = "0.13.1+cu116"
@@ -61,10 +61,7 @@ def check_versions():
                 check_ver = importlib_metadata.version(check)
                 if check in reqs_dict:
                     req_version = reqs_dict[check]
-                    if str(check_ver) == str(req_version):
-                        status = "[+]"
-                    else:
-                        status = "[!]"
+                    status = "[+]" if str(check_ver) == str(req_version) else "[!]"
         except importlib_metadata.PackageNotFoundError:
             check_available = False
         if not check_available:
@@ -84,7 +81,7 @@ dreambooth_skip_install = os.environ.get('DREAMBOOTH_SKIP_INSTALL', False)
 
 if not dreambooth_skip_install:
     check_versions()
-    name = "StableTuner"    
+    name = "StableTuner"
     run(f'"{sys.executable}" -m pip install -r "{req_file}"', f"Checking {name} requirements...",
         f"Couldn't install {name} requirements.")
 
@@ -93,9 +90,9 @@ if not dreambooth_skip_install:
         torch_cmd = os.environ.get('TORCH_COMMAND', None)
         if torch_cmd is None:
             torch_cmd = 'pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117 --upgrade"'
-                        
+
         run(f'"{sys.executable}" -m {torch_cmd}', "Checking/upgrading existing torch/torchvision installation", "Couldn't install torch")
-        
+
 
         #if .cache directory in Path.home() exists
         hf_cache_dir = Path.home() / ".cache"
@@ -127,10 +124,9 @@ if not dreambooth_skip_install:
             dst_file = 'default_config.json'
             src = Path.cwd() / src_file
             dst = accelerate_dir / dst_file
-            if src.exists():
-                if dst.exists():
-                    shutil.copy2(src, dst)
-                    print(f"Created {dst_file} in {accelerate_dir}")
+            if src.exists() and dst.exists():
+                shutil.copy2(src, dst)
+                print(f"Created {dst_file} in {accelerate_dir}")
 
 
 
@@ -152,7 +148,7 @@ if os.name == "nt":
         cudnn_src = os.path.join(os.getcwd(), "cudnn_windows")
         if not os.path.exists(cudnn_src):
             cudnn_url = "https://b1.thefileditch.ch/mwxKTEtelILoIbMbruuM.zip"
-            print(f"Downloading CUDNN 8.6")
+            print("Downloading CUDNN 8.6")
             #download with requests
             r = requests.get(cudnn_url, allow_redirects=True)
             #save to cwd
@@ -173,31 +169,25 @@ if os.name == "nt":
     filecmp.clear_cache()
     for file in os.listdir(bnb_src):
         src_file = os.path.join(bnb_src, file)
-        if file == "main.py":
-            dest = os.path.join(bnb_dest, "cuda_setup")
-            if not os.path.exists(dest):
-                os.mkdir(dest)
-        else:
-            dest = bnb_dest
-            if not os.path.exists(dest):
-                os.mkdir(dest)
+        dest = os.path.join(bnb_dest, "cuda_setup") if file == "main.py" else bnb_dest
+        if not os.path.exists(dest):
+            os.mkdir(dest)
         dest_file = os.path.join(dest, file)
         status = shutil.copy2(src_file, dest)
     if status:
         print("Copied B&B files to destination")
     print(f"Checking for CUDNN files in {cudnn_dest}")
-    if os.path.exists(cudnn_src):
-        if os.path.exists(cudnn_dest):
-            # check for different files
-            filecmp.clear_cache()
-            for file in os.listdir(cudnn_src):
-                src_file = os.path.join(cudnn_src, file)
-                dest_file = os.path.join(cudnn_dest, file)
-                #if dest file exists, check if it's different
-                if os.path.exists(dest_file):
-                    status = shutil.copy2(src_file, cudnn_dest)
-            if status:
-                print("Copied CUDNN 8.6 files to destination")
+    if os.path.exists(cudnn_src) and os.path.exists(cudnn_dest):
+        # check for different files
+        filecmp.clear_cache()
+        for file in os.listdir(cudnn_src):
+            src_file = os.path.join(cudnn_src, file)
+            dest_file = os.path.join(cudnn_dest, file)
+            #if dest file exists, check if it's different
+            if os.path.exists(dest_file):
+                status = shutil.copy2(src_file, cudnn_dest)
+        if status:
+            print("Copied CUDNN 8.6 files to destination")
     d_commit = '8178c84'
     diffusers_cmd = f"git+https://github.com/huggingface/diffusers.git@{d_commit}#egg=diffusers --force-reinstall"
     run(f'"{python}" -m pip install {diffusers_cmd}', f"Installing Diffusers {d_commit} commit", "Couldn't install diffusers")
